@@ -15,8 +15,8 @@ create table book(
     created_at timestamp default current_timestamp not null,
     name text, 
     ordering not null,
-    read_start timestamp,
-    read_finish timestamp,
+    read_start date,
+    read_finish date,
     category_id integer,
     foreign key(category_id) REFERENCES book_category(id),
     unique(category_id, ordering)
@@ -186,3 +186,18 @@ insert into book (name, category_id, ordering) values
   ('Бизнес с нуля :: Эрик Рис', 15, 12),
   ('Rework: бизнес без предрассудков :: Джейсон Фрайд, Дэвид Хайнемайер Хенссон', 15, 13),
   ('Как привести дела в порядок :: Дэвид Аллен', 15, 14);
+
+update book set 
+read_start='2022-11-21',
+read_finish='2022-12-18'
+where name='Чистый код :: Роберт Мартин';
+
+update book set 
+read_start='2022-12-18',
+read_finish='2022-12-31'
+where name='Теоретический минимум по Computer Science. Все что нужно программисту и разработчику :: Фило Владстон Феррейра';
+
+update book set 
+read_start='2023-01-01',
+read_finish='2023-02-12'
+where name='PostgreSQL. Основы языка SQL :: Евгений Моргунов';
