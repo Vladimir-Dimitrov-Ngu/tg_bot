@@ -1,6 +1,8 @@
 import os
 import logging
-from allbooks import get_all_books
+from allbooks import get_all_books, get_allready_all_books
+import config
+from datetime import datetime
 import telegram
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
@@ -28,16 +30,33 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def all_books(update: Update, context: ContextTypes.DEFAULT_TYPE):
     categories_with_books = await get_all_books()
     for category in categories_with_books:
-        response = "<b>" + category.name + '</b>\n\n' 
+        response = "<b>" + category.name + "</b>\n\n"
         for index, book in enumerate(category.books, 1):
-            response += f'{index}. {book.name}' + '\n'
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode=telegram.constants.ParseMode.HTML)
+            response += f"{index}. {book.name}" + "\n"
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=response,
+            parse_mode=telegram.constants.ParseMode.HTML,
+        )
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text=message_text.HELP
     )
+
+
+async def allready(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    allready_read_books = await get_allready_all_books()
+    response = "Прочитанные книги:\n\n"
+    for index, book in enumerate(allready_read_books, 1):
+        read_start, read_finish = map(lambda date: datetime.strptime(date, '%Y-%m-%d'), [book.read_start, book.read_finish])
+        read_start, read_finish = map(lambda date: date.strftime(config.DATE_FORMAT), [read_start, read_finish])
+        response += (
+            f"{index}. {book.name} читали c {read_start} до {read_finish}"
+            + "\n"
+        )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
 if __name__ == "__main__":
@@ -51,5 +70,8 @@ if __name__ == "__main__":
 
     all_books_handler = CommandHandler("allbooks", all_books)
     application.add_handler(all_books_handler)
+
+    allready_handler = CommandHandler("allready", allready)
+    application.add_handler(allready_handler)
 
     application.run_polling()
