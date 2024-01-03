@@ -201,3 +201,9 @@ update book set
 read_start='2023-01-01',
 read_finish='2023-02-12'
 where name='PostgreSQL. Основы языка SQL :: Евгений Моргунов';
+
+
+update book set 
+read_start='2024-01-01',
+read_finish='2024-02-12'
+where name='Программируй & типизируй :: Влад Ришкуция';

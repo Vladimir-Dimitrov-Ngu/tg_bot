@@ -1,6 +1,6 @@
 import os
 import logging
-from allbooks import get_all_books, get_allready_all_books
+from allbooks import get_all_books, get_allready_all_books, get_now_books
 import config
 from datetime import datetime
 import telegram
@@ -58,6 +58,18 @@ async def allready(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
+async def now(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    allready_read_books = await get_now_books()
+    response = "Книги которые читаются сейчас:\n\n"
+    for index, book in enumerate(allready_read_books, 1):
+        read_start, read_finish = map(lambda date: datetime.strptime(date, '%Y-%m-%d'), [book.read_start, book.read_finish])
+        read_start, read_finish = map(lambda date: date.strftime(config.DATE_FORMAT), [read_start, read_finish])
+        response += (
+            f"{index}. {book.name} читали c {read_start} до {read_finish}"
+            + "\n"
+        )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
@@ -73,5 +85,8 @@ if __name__ == "__main__":
 
     allready_handler = CommandHandler("allready", allready)
     application.add_handler(allready_handler)
+
+    now_handler = CommandHandler("now", now)
+    application.add_handler(now_handler)
 
     application.run_polling()
