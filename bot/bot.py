@@ -1,6 +1,9 @@
 import os
 import logging
-from allbooks import get_all_books, get_allready_all_books, get_now_books
+from allbooks import (
+    get_all_books, 
+    get_allready_all_books, 
+    get_now_books)
 import config
 from datetime import datetime
 import telegram
@@ -50,22 +53,19 @@ async def allready(update: Update, context: ContextTypes.DEFAULT_TYPE):
     allready_read_books = await get_allready_all_books()
     response = "Прочитанные книги:\n\n"
     for index, book in enumerate(allready_read_books, 1):
-        read_start, read_finish = map(lambda date: datetime.strptime(date, '%Y-%m-%d'), [book.read_start, book.read_finish])
-        read_start, read_finish = map(lambda date: date.strftime(config.DATE_FORMAT), [read_start, read_finish])
         response += (
-            f"{index}. {book.name} читали c {read_start} до {read_finish}"
+            f"{index}. {book.name} читали c {book.read_start} до {book.read_finish}"
             + "\n"
         )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 async def now(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    allready_read_books = await get_now_books()
-    response = "Книги которые читаются сейчас:\n\n"
-    for index, book in enumerate(allready_read_books, 1):
-        read_start, read_finish = map(lambda date: datetime.strptime(date, '%Y-%m-%d'), [book.read_start, book.read_finish])
-        read_start, read_finish = map(lambda date: date.strftime(config.DATE_FORMAT), [read_start, read_finish])
+    now_read_books = await get_now_books()
+    response = "Сейчас мы читаем:\n\n"
+    just_one_book = len(now_read_books) == 1    
+    for index, book in enumerate(now_read_books, 1):
         response += (
-            f"{index}. {book.name} читали c {read_start} до {read_finish}"
+            f"{str(index) + '. ' if not just_one_book else ''}{book.name} читаем c {book.read_start} до {book.read_finish}"
             + "\n"
         )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
