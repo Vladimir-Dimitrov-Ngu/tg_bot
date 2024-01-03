@@ -1,6 +1,7 @@
 import os
 import logging
 from allbooks import get_all_books
+import telegram
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 import message_text
@@ -25,11 +26,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def all_books(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("all books")
-    all_books_chunks = await get_all_books(chunk_size=50)
-    for chunk in all_books_chunks:
-        response = "\n".join([book.name for book in chunk])
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    categories_with_books = await get_all_books()
+    for category in categories_with_books:
+        response = "<b>" + category.name + '</b>\n\n' 
+        for index, book in enumerate(category.books, 1):
+            response += f'{index}. {book.name}' + '\n'
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode=telegram.constants.ParseMode.HTML)
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -47,7 +49,7 @@ if __name__ == "__main__":
     help_handler = CommandHandler("help", help)
     application.add_handler(help_handler)
 
-    all_books_handler = CommandHandler("all_books", all_books)
+    all_books_handler = CommandHandler("allbooks", all_books)
     application.add_handler(all_books_handler)
 
     application.run_polling()

@@ -6,7 +6,7 @@ create table bot_user(
 create table book_category(
  id integer primary key,
  created_at timestamp DEFAULT CURRENT_TIMESTAMP not null,
- name varchar(60) not null,
+ name varchar(60) not null unique,
  ordering integer not null unique
 );
 
