@@ -28,7 +28,7 @@ async def save_vote(telegram_user_id: int, book: Iterable) -> None:
     if vote_id is None:
         logger.warning('No actual voting in save_vote()')
         return 
-    sql = f"""INSERT INTO vote 
+    sql = f"""INSERT OR REPLACE INTO vote 
         (vote_id, user_id, first_book, second_book, third_book) 
     VALUES ({vote_id}, {telegram_user_id}, {book[0].id}, {book[1].id}, {book[2].id})
     """

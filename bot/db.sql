@@ -33,7 +33,6 @@ create table voting(
     CHECK (voting_finish > voting_start)
 );
 create table vote(
-    id integer primary key,
     vote_id integer,
     user_id integer,
     first_book integer,
@@ -43,7 +42,8 @@ create table vote(
     foreign key(user_id) REFERENCES bot_user(telegram_id),
     foreign key(first_book) REFERENCES book(id),
     foreign key(second_book) REFERENCES book(id),
-    foreign key(third_book) REFERENCES book(id)
+    foreign key(third_book) REFERENCES book(id),
+    primary key(vote_id, user_id)
 );
 
 insert into book_category (name, ordering) values 
