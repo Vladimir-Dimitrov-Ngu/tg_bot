@@ -128,7 +128,6 @@ async def _get_books_from_db(sql: LiteralString) -> Iterable[Book]:
 
 async def get_books_by_numbers(numbers: tuple[int]) -> Iterable[Book]:
     numbers_joined = ",".join(map(str, numbers))
-    print(numbers_joined)
     sql = f"""
 		SELECT t2.* FROM (
 			values ({numbers[0]}, 1), ({numbers[1]}, 2), ({numbers[2]}, 3)
