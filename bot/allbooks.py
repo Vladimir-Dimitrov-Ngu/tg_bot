@@ -1,8 +1,7 @@
 import aiosqlite
 from dataclasses import dataclass
 from datetime import datetime
-from typing import LiteralString
-from typing import List
+from typing import LiteralString, Iterable
 
 import config
 
@@ -30,10 +29,10 @@ class Book:
 class Category:
     id: int
     name: str
-    books: List[int]
+    books: Iterable[int]
 
 
-def _group_books_by_category(books: list[Book]) -> list[Category]:
+def _group_books_by_category(books: Iterable[Book]) -> Iterable[Category]:
     categories = []
     category_id = None
     for book in books:
@@ -48,7 +47,7 @@ def _group_books_by_category(books: list[Book]) -> list[Category]:
     return categories
 
 
-async def get_all_books() -> list[Category]:
+async def get_all_books() -> Iterable[Category]:
     books = []
     sql = (
         _get_books_base_sql()
@@ -59,9 +58,10 @@ async def get_all_books() -> list[Category]:
     return _group_books_by_category(books)
 
 
-async def get_allready_all_books() -> list[Book]:
+async def get_allready_all_books() -> Iterable[Book]:
     sql = (
-        _get_books_base_sql() + """
+        _get_books_base_sql()
+        + """
         WHERE read_start < current_date 
         AND read_finish <= current_date
         ORDER BY b.read_start
@@ -69,19 +69,20 @@ async def get_allready_all_books() -> list[Book]:
     )
     return await _get_books_from_db(sql)
 
-async def get_non_started_books() -> list[Book]:
-    sql  = (
-        _get_books_base_sql() + """
+
+async def get_non_started_books() -> Iterable[Book]:
+    sql = (
+        _get_books_base_sql()
+        + """
         WHERE b.read_start IS NULL
         ORDER BY c."ordering", b."ordering"
         """
     )
     books = await _get_books_from_db(sql)
     return _group_books_by_category(books)
-    
 
 
-async def get_now_books() -> list[Book]:
+async def get_now_books() -> Iterable[Book]:
     sql = (
         _get_books_base_sql()
         + """
@@ -106,7 +107,7 @@ def _get_books_base_sql() -> LiteralString:
     """
 
 
-async def _get_books_from_db(sql: LiteralString) -> list[Book]:
+async def _get_books_from_db(sql: LiteralString) -> Iterable[Book]:
     books = []
     async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
         db.row_factory = aiosqlite.Row
@@ -124,8 +125,9 @@ async def _get_books_from_db(sql: LiteralString) -> list[Book]:
                 )
     return books
 
-async def get_books_by_numbers(numbers: tuple[int]) -> list[Book]:
-    numbers_joined = ','.join(map(str, numbers))
+
+async def get_books_by_numbers(numbers: tuple[int]) -> Iterable[Book]:
+    numbers_joined = ",".join(map(str, numbers))
     print(numbers_joined)
     sql = f"""
 		SELECT t2.* FROM (
@@ -154,4 +156,3 @@ async def get_books_by_numbers(numbers: tuple[int]) -> list[Book]:
         order by t0.column2;
         """
     return await _get_books_from_db(sql)
-    

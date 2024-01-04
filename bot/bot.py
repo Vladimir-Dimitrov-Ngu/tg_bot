@@ -1,16 +1,24 @@
 import os
 import logging
 from allbooks import (
-    get_all_books, 
-    get_allready_all_books, 
+    get_all_books,
+    get_allready_all_books,
     get_now_books,
     get_non_started_books,
-    get_books_by_numbers)
+    get_books_by_numbers,
+)
+from votings import actual_voting_id, save_vote
 import config
 from datetime import datetime
 import telegram
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 import message_text
 import re
 
@@ -62,10 +70,11 @@ async def allready(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
+
 async def now(update: Update, context: ContextTypes.DEFAULT_TYPE):
     now_read_books = await get_now_books()
     response = "Сейчас мы читаем:\n\n"
-    just_one_book = len(now_read_books) == 1    
+    just_one_book = len(now_read_books) == 1
     for index, book in enumerate(now_read_books, 1):
         response += (
             f"{str(index) + '. ' if not just_one_book else ''}{book.name} читаем c {book.read_start} до {book.read_finish}"
@@ -73,7 +82,16 @@ async def now(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
+
 async def vote(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await actual_voting_id() is None:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message_text.NO_ACTUAL_VOTING,
+            parse_mode=telegram.constants.ParseMode.HTML,
+        )
+        return
+
     categories_with_books = await get_non_started_books()
     index = 1
     for category in categories_with_books:
@@ -91,35 +109,40 @@ async def vote(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=message_text.VOTE,
         parse_mode=telegram.constants.ParseMode.HTML,
     )
-    
+
+
 async def vote_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await actual_voting_id() is None:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message_text.NO_ACTUAL_VOTING,
+            parse_mode=telegram.constants.ParseMode.HTML,
+        )
+        return
+
     user_message = update.message.text
-    numbers = re.findall(r'\d+', user_message)
+    numbers = re.findall(r"\d+", user_message)
     numbers = tuple(set(map(int, numbers)))
     if len(numbers) != config.VOTE_ELEMENTS_COUNT:
         await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=message_text.VOTE_PROCESS_INCORRECT_INPUT,
-        parse_mode=telegram.constants.ParseMode.HTML)
-        return 
-    
+            chat_id=update.effective_chat.id,
+            text=message_text.VOTE_PROCESS_INCORRECT_INPUT,
+            parse_mode=telegram.constants.ParseMode.HTML,
+        )
+        return
+
     books = await get_books_by_numbers(numbers)
     if len(books) != config.VOTE_ELEMENTS_COUNT:
         await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=message_text.VOTE_PROCESS_INCORRECT_BOOKS)
-        return 
-    response = f'Ура, ты выбрал {config.VOTE_ELEMENTS_COUNT} книги:\n\n'
+            chat_id=update.effective_chat.id,
+            text=message_text.VOTE_PROCESS_INCORRECT_BOOKS,
+        )
+        return
+    await save_vote(update.effective_user.id, books)
+    response = f"Ура, ты выбрал {config.VOTE_ELEMENTS_COUNT} книги:\n\n"
     for index, book in enumerate(books, 1):
-        response += str(index) + '. ' + book.name + '\n'
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=response
-    )
-
-
-    
-
+        response += str(index) + ". " + book.name + "\n"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
 if __name__ == "__main__":
@@ -143,7 +166,9 @@ if __name__ == "__main__":
     vote_handler = CommandHandler("vote", vote)
     application.add_handler(vote_handler)
 
-    vote_process_hander = MessageHandler(filters.TEXT & (~filters.COMMAND), vote_process)
+    vote_process_hander = MessageHandler(
+        filters.TEXT & (~filters.COMMAND), vote_process
+    )
     application.add_handler(vote_process_hander)
 
     application.run_polling()

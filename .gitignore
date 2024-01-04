@@ -1,4 +1,5 @@
 file.txt
+test.py
 bot/__pycache__
 bot/config.py
 bot/db.sqlite3

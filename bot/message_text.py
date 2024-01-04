@@ -49,3 +49,7 @@ VOTE_PROCESS_INCORRECT_BOOKS = f"""
 {' '.join(map(str, [i for i in range(1, config.VOTE_ELEMENTS_COUNT + 1)]))}
 
 """
+
+NO_ACTUAL_VOTING = """
+Сейчас нет голосования 
+"""

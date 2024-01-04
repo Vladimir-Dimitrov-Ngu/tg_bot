@@ -19,14 +19,18 @@ create table book(
     read_finish date,
     category_id integer,
     foreign key(category_id) REFERENCES book_category(id),
-    unique(category_id, ordering)
-);
+    unique(category_id, ordering),
+    check((
+      read_finish > read_start AND read_finish is NOT NULL AND read_start IS NOT NULL) 
+      OR (read_finish IS NULL OR read_start IS NULL))
+      );
 
 -- Голосование 
 create table voting(
     id integer primary key,
-    voting_start timestamp not null unique,
-    voting_finish timestamp not null unique
+    voting_start date not null unique,
+    voting_finish date not null unique
+    CHECK (voting_finish > voting_start)
 );
 create table vote(
     id integer primary key,
@@ -207,3 +211,5 @@ update book set
 read_start='2024-01-01',
 read_finish='2024-02-12'
 where name='Программируй & типизируй :: Влад Ришкуция';
+
+insert into voting(voting_start, voting_finish) values('2023-12-30', '2024-01-10');
