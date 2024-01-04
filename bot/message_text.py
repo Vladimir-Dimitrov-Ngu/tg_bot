@@ -1,3 +1,5 @@
+import config
+
 GREETINGS = """Привееет!
 Это Telegram-бот книжного клуба Ботаним.
 Здесь можно посмотреть список книг, которые мы читали и планируем читать, \
@@ -33,9 +35,17 @@ VOTE = """
 Обрати внимание, что порядок важен! 
 """
 
-VOTE_PROCESS_INCORRECT_INPUT = """Не смог прочесть номер книги из твоего сообщения
+VOTE_PROCESS_INCORRECT_INPUT = f"""Не смог прочесть номер книги из твоего сообщения. Напиши {config.VOTE_ELEMENTS_COUNT} разных номера книг в сообщении
 
 Напиши например так:
-1 2 3
+{' '.join(map(str, [i for i in range(1, config.VOTE_ELEMENTS_COUNT + 1)]))}
+
+"""
+
+VOTE_PROCESS_INCORRECT_BOOKS = f"""
+Ты вел некорректные номера книг
+
+Напиши например так:
+{' '.join(map(str, [i for i in range(1, config.VOTE_ELEMENTS_COUNT + 1)]))}
 
 """
