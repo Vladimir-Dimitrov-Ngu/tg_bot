@@ -3,7 +3,8 @@ import logging
 from allbooks import (
     get_all_books, 
     get_allready_all_books, 
-    get_now_books)
+    get_now_books,
+    get_non_started_books)
 import config
 from datetime import datetime
 import telegram
@@ -70,6 +71,25 @@ async def now(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
+async def vote(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    categories_with_books = await get_non_started_books()
+    index = 1
+    for category in categories_with_books:
+        response = "<b>" + category.name + "</b>\n\n"
+        for book in category.books:
+            response += f"{index}. {book.name}" + "\n"
+            index += 1
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=response,
+            parse_mode=telegram.constants.ParseMode.HTML,
+        )
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message_text.VOTE,
+        parse_mode=telegram.constants.ParseMode.HTML,
+    )
+    
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
@@ -88,5 +108,8 @@ if __name__ == "__main__":
 
     now_handler = CommandHandler("now", now)
     application.add_handler(now_handler)
+
+    vote_handler = CommandHandler("vote", vote)
+    application.add_handler(vote_handler)
 
     application.run_polling()
