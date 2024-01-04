@@ -1,4 +1,4 @@
 file.txt
 bot/__pycache__
 bot/config.py
-bot/db.sqlite3git
+bot/db.sqlite3

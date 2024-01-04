@@ -123,3 +123,35 @@ async def _get_books_from_db(sql: LiteralString) -> list[Book]:
                     )
                 )
     return books
+
+async def get_books_by_numbers(numbers: tuple[int]) -> list[Book]:
+    numbers_joined = ','.join(map(str, numbers))
+    print(numbers_joined)
+    sql = f"""
+		SELECT t2.* FROM (
+			values ({numbers[0]}, 1), ({numbers[1]}, 2), ({numbers[2]}, 3)
+		) t0
+		inner join
+        (SELECT t.* 
+        FROM 
+        (select ROW_NUMBER() OVER (
+        order by c."ordering", b."ordering"
+        ) as idx,
+            b.id as book_id,
+            b.name as book_name, 
+            c.id as category_id,
+            c.name as category_name,
+            b.read_start, b.read_finish
+        FROM 
+            book b
+        LEFT JOIN book_category c ON
+            c.id = b.category_id
+        WHERE read_start IS NULL
+        ) t
+        WHERE t.idx in ({numbers_joined})
+        ORDER BY t.idx) t2
+        ON t0.column1 = t2.idx
+        order by t0.column2;
+        """
+    return await _get_books_from_db(sql)
+    

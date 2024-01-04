@@ -4,13 +4,15 @@ from allbooks import (
     get_all_books, 
     get_allready_all_books, 
     get_now_books,
-    get_non_started_books)
+    get_non_started_books,
+    get_books_by_numbers)
 import config
 from datetime import datetime
 import telegram
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 import message_text
+import re
 
 
 logging.basicConfig(
@@ -90,6 +92,30 @@ async def vote(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=telegram.constants.ParseMode.HTML,
     )
     
+async def vote_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_message = update.message.text
+    numbers = re.findall(r'\d+', user_message)
+    numbers = tuple(map(int, numbers))
+    if len(numbers) != 3:
+        await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message_text.VOTE_PROCESS_INCORRECT_INPUT,
+        parse_mode=telegram.constants.ParseMode.HTML)
+        return 
+    
+    books = await get_books_by_numbers(numbers)
+    response = 'Ура, ты выбрали 3 книги:\n\n'
+    for index, book in enumerate(books, 1):
+        response += str(index) + '. ' + book.name + '\n'
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=response
+    )
+
+
+    
+
+
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
@@ -111,5 +137,8 @@ if __name__ == "__main__":
 
     vote_handler = CommandHandler("vote", vote)
     application.add_handler(vote_handler)
+
+    vote_process_hander = MessageHandler(filters.TEXT & (~filters.COMMAND), vote_process)
+    application.add_handler(vote_process_hander)
 
     application.run_polling()
