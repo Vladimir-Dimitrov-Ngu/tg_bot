@@ -1,14 +1,17 @@
 import aiosqlite
+from datetime import datetime
 from typing import Iterable
 import config
 from user import _insert_user
 import logging
 from dataclasses import dataclass
 
+
 @dataclass
 class BookVoteResult:
     book_name: str
     score: int
+
 
 @dataclass
 class VoteResult:
@@ -16,13 +19,25 @@ class VoteResult:
     vote_finish: str
     leaders: list
 
-@dataclass 
+
+@dataclass
 class Voting:
-    id: int 
+    id: int
     vote_start: str
     vote_finish: str
 
+    def __post_init__(self):
+        """Format read_start and read_finish to needed string format"""
+        for fieid in ("vote_start", "vote_finish"):
+            value = getattr(self, fieid)
+            if value is None:
+                continue
+            value = datetime.strptime(value, "%Y-%m-%d").strftime(config.DATE_FORMAT)
+            setattr(self, fieid, value)
+
+
 logger = logging.getLogger(__name__)
+
 
 async def get_actual_voting() -> Voting | None:
     sql = """SELECT id, voting_start, voting_finish
@@ -39,17 +54,18 @@ async def get_actual_voting() -> Voting | None:
             if row is None:
                 return None
             return Voting(
-                id = row['id'],
-                vote_start = row['voting_start'],
-                vote_finish = row['voting_finish']
+                id=row["id"],
+                vote_start=row["voting_start"],
+                vote_finish=row["voting_finish"],
             )
-        
+
+
 async def save_vote(telegram_user_id: int, book: Iterable) -> None:
     await _insert_user(telegram_user_id)
     vote_id = await get_actual_voting()
     if vote_id is None:
-        logger.warning('No actual voting in save_vote()')
-        return 
+        logger.warning("No actual voting in save_vote()")
+        return
     sql = f"""INSERT OR REPLACE INTO vote 
         (vote_id, user_id, first_book, second_book, third_book) 
     VALUES ({vote_id.id}, {telegram_user_id}, {book[0].id}, {book[1].id}, {book[2].id})
@@ -58,13 +74,13 @@ async def save_vote(telegram_user_id: int, book: Iterable) -> None:
         await db.execute(sql)
         await db.commit()
 
+
 async def get_leaders() -> VoteResult | None:
     actual_voting = await get_actual_voting()
     vote_results = VoteResult(
-        vote_start = actual_voting.vote_start,
-        vote_finish = actual_voting.vote_finish,
-        leaders = []
-
+        vote_start=actual_voting.vote_start,
+        vote_finish=actual_voting.vote_finish,
+        leaders=[],
     )
     sql = f"""
         SELECT t2.*, b.name AS book_name FROM 
@@ -84,7 +100,7 @@ async def get_leaders() -> VoteResult | None:
             ) t
             GROUP BY book_id
             ORDER BY total_score DESC
-            LIMIT 10) t2
+            LIMIT 5) t2
         LEFT JOIN book b ON b.id=t2.book_id
         """
     actual_voting = get_actual_voting()
@@ -94,9 +110,7 @@ async def get_leaders() -> VoteResult | None:
         db.row_factory = aiosqlite.Row
         async with db.execute(sql) as cursor:
             async for row in cursor:
-                vote_results.leaders.append(BookVoteResult(
-                    book_name = row['book_name'],
-                    score = row['total_score']
-                ))
+                vote_results.leaders.append(
+                    BookVoteResult(book_name=row["book_name"], score=row["total_score"])
+                )
     return vote_results
-

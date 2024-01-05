@@ -1,7 +1,7 @@
 from typing import Iterable
 import config
 import aiosqlite
-import logging 
+import logging
 
 
 async def _insert_user(telegram_user_id: int) -> None:

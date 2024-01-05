@@ -7,10 +7,7 @@ from allbooks import (
     get_non_started_books,
     get_books_by_numbers,
 )
-from votings import (
-    get_actual_voting, 
-    save_vote, 
-    get_leaders)
+from votings import get_actual_voting, save_vote, get_leaders
 import config
 from datetime import datetime
 import telegram
@@ -145,23 +142,21 @@ async def vote_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for index, book in enumerate(books, 1):
         response += str(index) + ". " + book.name + "\n"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
-    
+
+
 async def vote_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     leaders = await get_leaders()
     if leaders is None:
         await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=message_text.NO_VOTE_RESULTS)
-        return 
-    response = 'Топ 5 книг голосования:\n\n'
+            chat_id=update.effective_chat.id, text=message_text.NO_VOTE_RESULTS
+        )
+        return
+    response = "Топ 5 книг голосования:\n\n"
     for index, book in enumerate(leaders.leaders, 1):
         response += f"{index}. {book.book_name}: {book.score}\n"
-    response += f'Даты голосования: {leaders.vote_start} - {leaders.vote_finish}'
-    await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=response)
-    return 
-
+    response += f"Даты голосования: {leaders.vote_start} - {leaders.vote_finish}"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    return
 
 
 if __name__ == "__main__":
@@ -185,7 +180,6 @@ if __name__ == "__main__":
     vote_handler = CommandHandler("vote", vote)
     application.add_handler(vote_handler)
 
-
     vote_results_handler = CommandHandler("voteresults", vote_results)
     application.add_handler(vote_results_handler)
 
@@ -193,7 +187,5 @@ if __name__ == "__main__":
         filters.TEXT & (~filters.COMMAND), vote_process
     )
     application.add_handler(vote_process_hander)
-
-
 
     application.run_polling()
