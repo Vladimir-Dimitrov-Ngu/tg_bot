@@ -4,7 +4,6 @@ import config
 import re
 import matplotlib.pyplot as plt
 from io import BytesIO
-from datetime import datetime
 from telegram import Update, InputFile, constants
 from telegram.ext import (
     ApplicationBuilder,
@@ -79,7 +78,8 @@ async def now(update: Update, context: ContextTypes.DEFAULT_TYPE):
     just_one_book = len(now_read_books) == 1
     for index, book in enumerate(now_read_books, 1):
         response += (
-            f"{str(index) + '. ' if not just_one_book else ''}{book.name} читаем c {book.read_start} до {book.read_finish}"
+            f"{str(index) + '. ' if not just_one_book else ''}{book.name} \
+                читаем c {book.read_start} до {book.read_finish}"
             + "\n"
         )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
@@ -140,10 +140,14 @@ async def vote_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
     await save_vote(update.effective_user.id, books)
-    response = f"Ура, ты выбрал {config.VOTE_ELEMENTS_COUNT} книги:\n\n"
+    books_formatted = []
     for index, book in enumerate(books, 1):
-        response += str(index) + ". " + book.name + "\n"
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+        books_formatted.append(str(index) + ". " + book.name)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message_text.SUCCESS_VOTE.format(books="\n".join(books_formatted)),
+    )
+    return
 
 
 async def vote_results(update: Update, context: ContextTypes.DEFAULT_TYPE):

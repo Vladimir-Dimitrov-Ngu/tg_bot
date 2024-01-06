@@ -213,3 +213,11 @@ read_finish='2024-02-12'
 where name='Программируй & типизируй :: Влад Ришкуция';
 
 insert into voting(voting_start, voting_finish) values('2023-12-30', '2024-01-10');
+
+insert into vote values (1, 1, 1, 2, 3);
+insert into vote values (2, 1, 3, 2, 1);
+insert into vote values (3, 1, 100, 40, 15);
+insert into vote values (4, 1, 40, 1, 3);
+insert into vote values (5, 1, 15, 40, 3);
+insert into vote values (6, 1, 15, 100, 3);
+insert into vote values (7, 1, 15, 30, 3);
