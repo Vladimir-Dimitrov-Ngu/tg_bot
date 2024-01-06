@@ -11,7 +11,7 @@ from votings import get_actual_voting, save_vote, get_leaders
 import config
 from datetime import datetime
 import telegram
-from telegram import Update
+from telegram import Update, InputFile
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
@@ -19,8 +19,10 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+import matplotlib.pyplot as plt
 import message_text
 import re
+from io import BytesIO
 
 
 logging.basicConfig(
@@ -158,6 +160,32 @@ async def vote_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
     return
 
+async def vote_results_graph(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    leaders = await get_leaders()
+    if leaders is None:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text=message_text.NO_VOTE_RESULTS
+        )
+        return
+    books_scores = {book.book_name: book.score for book in leaders.leaders}
+    sorted_books_scores = dict(sorted(books_scores.items(), key=lambda item: item[1], reverse=False))
+    books_name = list(sorted_books_scores.keys())
+    books_scores = list(sorted_books_scores.values())
+    plt.figure(figsize=(5, 5))
+    plt.barh(books_name, books_scores, color='skyblue')
+    plt.xlabel('Голоса')
+    plt.title('Результаты голосования')
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png', bbox_inches='tight', dpi=300)
+    buffer.seek(0)
+    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=InputFile(buffer))
+    return
+
+
+
+
+
+
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
@@ -182,6 +210,10 @@ if __name__ == "__main__":
 
     vote_results_handler = CommandHandler("voteresults", vote_results)
     application.add_handler(vote_results_handler)
+
+
+    vote_results_graph_handler = CommandHandler("voteresultsgraph", vote_results_graph)
+    application.add_handler(vote_results_graph_handler)
 
     vote_process_hander = MessageHandler(
         filters.TEXT & (~filters.COMMAND), vote_process
