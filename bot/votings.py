@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Iterable
 from dataclasses import dataclass
 
+
 import config
 from user import _insert_user
 
@@ -42,10 +43,10 @@ logger = logging.getLogger(__name__)
 
 async def get_actual_voting() -> Voting | None:
     sql = """SELECT id, voting_start, voting_finish
-    FROM voting 
+    FROM voting
     WHERE voting_start <= current_date
         AND voting_finish >= current_date
-    ORDER BY voting_start 
+    ORDER BY voting_start
     LIMIT 1
     """
     async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
@@ -67,8 +68,8 @@ async def save_vote(telegram_user_id: int, book: Iterable) -> None:
     if vote_id is None:
         logger.warning("No actual voting in save_vote()")
         return
-    sql = f"""INSERT OR REPLACE INTO vote 
-        (vote_id, user_id, first_book, second_book, third_book) 
+    sql = f"""INSERT OR REPLACE INTO vote
+        (vote_id, user_id, first_book, second_book, third_book)
     VALUES ({vote_id.id}, {telegram_user_id}, {book[0].id}, {book[1].id}, {book[2].id})
     """
     async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
@@ -84,8 +85,8 @@ async def get_leaders() -> VoteResult | None:
         leaders=[],
     )
     sql = f"""
-        SELECT t2.*, b.name AS book_name FROM 
-            (SELECT t.book_id, SUM(t.score) as total_score FROM (  
+        SELECT t2.*, b.name AS book_name FROM
+            (SELECT t.book_id, SUM(t.score) as total_score FROM (
                 SELECT first_book AS book_id, 3 * COUNT(*) as score
                 FROM vote v WHERE vote_id = {actual_voting.id} GROUP BY first_book
 
@@ -95,7 +96,7 @@ async def get_leaders() -> VoteResult | None:
                 FROM vote v WHERE vote_id = {actual_voting.id} GROUP BY second_book
 
                 UNION
-                
+
                 SELECT third_book  AS book_id, 1 * COUNT(*) as score
                 FROM vote v WHERE vote_id = {actual_voting.id} GROUP BY third_book
             ) t
