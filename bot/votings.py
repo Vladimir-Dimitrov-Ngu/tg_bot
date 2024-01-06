@@ -1,10 +1,11 @@
 import aiosqlite
+import logging
 from datetime import datetime
 from typing import Iterable
+from dataclasses import dataclass
+
 import config
 from user import _insert_user
-import logging
-from dataclasses import dataclass
 
 
 @dataclass
