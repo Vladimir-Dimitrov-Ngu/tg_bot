@@ -7,11 +7,11 @@ from allbooks import (
     get_non_started_books,
     get_books_by_numbers,
 )
-from votings import actual_voting_id, save_vote
+from votings import get_actual_voting, save_vote, get_leaders
 import config
 from datetime import datetime
 import telegram
-from telegram import Update
+from telegram import Update, InputFile
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
@@ -19,8 +19,10 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+import matplotlib.pyplot as plt
 import message_text
 import re
+from io import BytesIO
 
 
 logging.basicConfig(
@@ -84,7 +86,7 @@ async def now(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def vote(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await actual_voting_id() is None:
+    if await get_actual_voting() is None:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message_text.NO_ACTUAL_VOTING,
@@ -112,7 +114,7 @@ async def vote(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def vote_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await actual_voting_id() is None:
+    if await get_actual_voting() is None:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message_text.NO_ACTUAL_VOTING,
@@ -144,6 +146,47 @@ async def vote_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
+async def vote_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    leaders = await get_leaders()
+    if leaders is None:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text=message_text.NO_VOTE_RESULTS
+        )
+        return
+    response = "Топ 5 книг голосования:\n\n"
+    for index, book in enumerate(leaders.leaders, 1):
+        response += f"{index}. {book.book_name}: {book.score}\n"
+    response += f"Даты голосования: {leaders.vote_start} - {leaders.vote_finish}"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    return
+
+async def vote_results_graph(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    leaders = await get_leaders()
+    if leaders is None:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text=message_text.NO_VOTE_RESULTS
+        )
+        return
+    books_scores = {book.book_name: book.score for book in leaders.leaders}
+    sorted_books_scores = dict(sorted(books_scores.items(), key=lambda item: item[1], reverse=False))
+    books_name = list(sorted_books_scores.keys())
+    books_scores = list(sorted_books_scores.values())
+    plt.figure(figsize=(5, 5))
+    plt.barh(books_name, books_scores, color='skyblue')
+    plt.xlabel('Голоса')
+    plt.title('Результаты голосования')
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png', bbox_inches='tight', dpi=300)
+    buffer.seek(0)
+    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=InputFile(buffer))
+    return
+
+
+
+
+
+
+
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
@@ -164,6 +207,13 @@ if __name__ == "__main__":
 
     vote_handler = CommandHandler("vote", vote)
     application.add_handler(vote_handler)
+
+    vote_results_handler = CommandHandler("voteresults", vote_results)
+    application.add_handler(vote_results_handler)
+
+
+    vote_results_graph_handler = CommandHandler("voteresultsgraph", vote_results_graph)
+    application.add_handler(vote_results_graph_handler)
 
     vote_process_hander = MessageHandler(
         filters.TEXT & (~filters.COMMAND), vote_process
