@@ -1,5 +1,19 @@
 import os
 import logging
+import config
+import re
+import matplotlib.pyplot as plt
+from io import BytesIO
+from datetime import datetime
+from telegram import Update, InputFile, constants
+from telegram.ext import (
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
+
 from allbooks import (
     get_all_books,
     get_allready_all_books,
@@ -8,21 +22,7 @@ from allbooks import (
     get_books_by_numbers,
 )
 from votings import get_actual_voting, save_vote, get_leaders
-import config
-from datetime import datetime
-import telegram
-from telegram import Update, InputFile
-from telegram.ext import (
-    ApplicationBuilder,
-    ContextTypes,
-    CommandHandler,
-    MessageHandler,
-    filters,
-)
-import matplotlib.pyplot as plt
 import message_text
-import re
-from io import BytesIO
 
 
 logging.basicConfig(
@@ -52,7 +52,7 @@ async def all_books(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=response,
-            parse_mode=telegram.constants.ParseMode.HTML,
+            parse_mode=constants.ParseMode.HTML,
         )
 
 
@@ -90,7 +90,7 @@ async def vote(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message_text.NO_ACTUAL_VOTING,
-            parse_mode=telegram.constants.ParseMode.HTML,
+            parse_mode=constants.ParseMode.HTML,
         )
         return
 
@@ -104,12 +104,12 @@ async def vote(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=response,
-            parse_mode=telegram.constants.ParseMode.HTML,
+            parse_mode=constants.ParseMode.HTML,
         )
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=message_text.VOTE,
-        parse_mode=telegram.constants.ParseMode.HTML,
+        parse_mode=constants.ParseMode.HTML,
     )
 
 
@@ -118,7 +118,7 @@ async def vote_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message_text.NO_ACTUAL_VOTING,
-            parse_mode=telegram.constants.ParseMode.HTML,
+            parse_mode=constants.ParseMode.HTML,
         )
         return
 
@@ -128,7 +128,7 @@ async def vote_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message_text.VOTE_PROCESS_INCORRECT_INPUT,
-            parse_mode=telegram.constants.ParseMode.HTML,
+            parse_mode=constants.ParseMode.HTML,
         )
         return
 
@@ -160,6 +160,7 @@ async def vote_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
     return
 
+
 async def vote_results_graph(update: Update, context: ContextTypes.DEFAULT_TYPE):
     leaders = await get_leaders()
     if leaders is None:
@@ -168,23 +169,22 @@ async def vote_results_graph(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return
     books_scores = {book.book_name: book.score for book in leaders.leaders}
-    sorted_books_scores = dict(sorted(books_scores.items(), key=lambda item: item[1], reverse=False))
+    sorted_books_scores = dict(
+        sorted(books_scores.items(), key=lambda item: item[1], reverse=False)
+    )
     books_name = list(sorted_books_scores.keys())
     books_scores = list(sorted_books_scores.values())
     plt.figure(figsize=(5, 5))
-    plt.barh(books_name, books_scores, color='skyblue')
-    plt.xlabel('Голоса')
-    plt.title('Результаты голосования')
+    plt.barh(books_name, books_scores, color="skyblue")
+    plt.xlabel("Голоса")
+    plt.title("Результаты голосования")
     buffer = BytesIO()
-    plt.savefig(buffer, format='png', bbox_inches='tight', dpi=300)
+    plt.savefig(buffer, format="png", bbox_inches="tight", dpi=300)
     buffer.seek(0)
-    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=InputFile(buffer))
+    await context.bot.send_photo(
+        chat_id=update.effective_chat.id, photo=InputFile(buffer)
+    )
     return
-
-
-
-
-
 
 
 if __name__ == "__main__":
@@ -210,7 +210,6 @@ if __name__ == "__main__":
 
     vote_results_handler = CommandHandler("voteresults", vote_results)
     application.add_handler(vote_results_handler)
-
 
     vote_results_graph_handler = CommandHandler("voteresultsgraph", vote_results_graph)
     application.add_handler(vote_results_graph_handler)
