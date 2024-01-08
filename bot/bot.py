@@ -4,13 +4,20 @@ import config
 import re
 import matplotlib.pyplot as plt
 from io import BytesIO
-from telegram import Update, InputFile, constants
+from telegram import (
+    Update,
+    InputFile,
+    constants,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
     CommandHandler,
     MessageHandler,
     filters,
+    CallbackQueryHandler,
 )
 
 from allbooks import (
@@ -19,6 +26,7 @@ from allbooks import (
     get_now_books,
     get_non_started_books,
     get_books_by_numbers,
+    build_category_with_books_string,
 )
 from votings import get_actual_voting, save_vote, get_leaders
 import message_text
@@ -191,6 +199,32 @@ async def vote_results_graph(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return
 
 
+async def all_books_2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    categories_with_books = list(await get_all_books())
+
+    keyboard = [
+        [
+            InlineKeyboardButton("Предыдущая категория", callback_data="left"),
+            InlineKeyboardButton("Следующая категория", callback_data="right"),
+        ],
+    ]
+    reply_keyboard = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        build_category_with_books_string(categories_with_books[0]),
+        reply_markup=reply_keyboard,
+        parse_mode=constants.ParseMode.HTML,
+    )
+    return
+
+
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "right":
+        await query.edit_message_text(text=f"Дружок-пирожок, ты выбрал: {query.data}")
+
+
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
@@ -202,6 +236,10 @@ if __name__ == "__main__":
 
     all_books_handler = CommandHandler("allbooks", all_books)
     application.add_handler(all_books_handler)
+
+    all_books_handler_2 = CommandHandler("allbooks2", all_books_2)
+    application.add_handler(all_books_handler_2)
+    application.add_handler(CallbackQueryHandler(button))
 
     allready_handler = CommandHandler("allready", allready)
     application.add_handler(allready_handler)
