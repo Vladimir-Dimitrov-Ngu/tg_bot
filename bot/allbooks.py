@@ -2,7 +2,7 @@ import aiosqlite
 from dataclasses import dataclass
 from datetime import datetime
 from typing import LiteralString, Iterable
-
+from message_text import RANDOM_EMOJI
 import config
 
 
@@ -58,7 +58,8 @@ def _format_author_books(book: str):
 def build_category_with_books_string(category: Category) -> str:
     response = ["<b>" + category.name + "</b>\n\n"]
     for index, book in enumerate(category.books, 1):
-        response.append(f"{index}. {_format_author_books(book.name)}\n")
+        emoji = RANDOM_EMOJI[index]
+        response.append(f"{emoji} {_format_author_books(book.name)}\n")
     return "".join(response)
 
 
