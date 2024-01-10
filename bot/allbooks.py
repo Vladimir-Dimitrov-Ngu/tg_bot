@@ -47,10 +47,18 @@ def _group_books_by_category(books: Iterable[Book]) -> Iterable[Category]:
     return categories
 
 
+def _format_author_books(book: str):
+    try:
+        book_name, author = tuple(map(str.strip, book.split("::")))
+        return f"{book_name}. <i>{author}</i>"
+    except ValueError:
+        return book, None
+
+
 def build_category_with_books_string(category: Category) -> str:
     response = ["<b>" + category.name + "</b>\n\n"]
     for index, book in enumerate(category.books, 1):
-        response.append(f"{index}. {book.name}\n")
+        response.append(f"{index}. {_format_author_books(book.name)}\n")
     return "".join(response)
 
 
