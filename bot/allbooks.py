@@ -2,7 +2,7 @@ import aiosqlite
 from dataclasses import dataclass
 from datetime import datetime
 from typing import LiteralString, Iterable
-
+from message_text import RANDOM_EMOJI
 import config
 
 
@@ -47,6 +47,22 @@ def _group_books_by_category(books: Iterable[Book]) -> Iterable[Category]:
     return categories
 
 
+def _format_author_books(book: str):
+    try:
+        book_name, author = tuple(map(str.strip, book.split("::")))
+        return f"{book_name}. <i>{author}</i>"
+    except ValueError:
+        return book, None
+
+
+def build_category_with_books_string(category: Category) -> str:
+    response = ["<b>" + category.name + "</b>\n\n"]
+    for index, book in enumerate(category.books, 1):
+        emoji = RANDOM_EMOJI[index]
+        response.append(f"{emoji} {_format_author_books(book.name)}\n")
+    return "".join(response)
+
+
 async def get_all_books() -> Iterable[Category]:
     books = []
     sql = (
@@ -62,7 +78,7 @@ async def get_allready_all_books() -> Iterable[Book]:
     sql = (
         _get_books_base_sql()
         + """
-        WHERE read_start < current_date 
+        WHERE read_start < current_date
         AND read_finish <= current_date
         ORDER BY b.read_start
         """
@@ -86,7 +102,7 @@ async def get_now_books() -> Iterable[Book]:
     sql = (
         _get_books_base_sql()
         + """
-        WHERE read_start < current_date 
+        WHERE read_start < current_date
         AND read_finish >= current_date
         ORDER BY b.read_start
         """
@@ -98,12 +114,12 @@ def _get_books_base_sql() -> LiteralString:
     return """
         SELECT
             b.id as book_id,
-            b.name as book_name, 
+            b.name as book_name,
             c.id as category_id,
             c.name as category_name,
             b.read_start, b.read_finish
         FROM book as b
-        LEFT JOIN book_category c ON c.id=b.category_id 
+        LEFT JOIN book_category c ON c.id=b.category_id
     """
 
 
@@ -129,21 +145,21 @@ async def _get_books_from_db(sql: LiteralString) -> Iterable[Book]:
 async def get_books_by_numbers(numbers: tuple[int]) -> Iterable[Book]:
     numbers_joined = ",".join(map(str, numbers))
     sql = f"""
-		SELECT t2.* FROM (
-			values ({numbers[0]}, 1), ({numbers[1]}, 2), ({numbers[2]}, 3)
-		) t0
-		inner join
-        (SELECT t.* 
-        FROM 
+        SELECT t2.* FROM (
+            values ({numbers[0]}, 1), ({numbers[1]}, 2), ({numbers[2]}, 3)
+        ) t0
+        INNER JOIN
+        (SELECT t.*
+        FROM
         (select ROW_NUMBER() OVER (
         order by c."ordering", b."ordering"
         ) as idx,
             b.id as book_id,
-            b.name as book_name, 
+            b.name as book_name,
             c.id as category_id,
             c.name as category_name,
             b.read_start, b.read_finish
-        FROM 
+        FROM
             book b
         LEFT JOIN book_category c ON
             c.id = b.category_id
