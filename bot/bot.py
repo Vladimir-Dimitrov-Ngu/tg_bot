@@ -29,6 +29,7 @@ from allbooks import (
     get_books_by_numbers,
     get_non_started_books,
     get_now_books,
+    calculate_category_book_start_index,
 )
 from votings import get_actual_voting, get_leaders, save_vote
 
@@ -146,8 +147,20 @@ async def vote(
             parse_mode=constants.ParseMode.HTML,
         )
         return
+    if not update.message:
+        return
 
-    categories_with_books = await get_non_started_books()
+    categories_with_books = tuple(await get_non_started_books())
+    first_category = categories_with_books[0]
+    category_books_start_index = calculate_category_book_start_index(
+        categories_with_books, first_category
+    )
+    await update.message.reply_text(
+        build_category_with_books_string(first_category, category_books_start_index),
+        reply_markup=_get_categories_keyboard(0, len(categories_with_books)),
+        parse_mode=constants.ParseMode.HTML,
+    )
+    return
     index = 1
     for category in categories_with_books:
         response = "<b>" + category.name + "</b>\n\n"
@@ -322,7 +335,7 @@ def _get_categories_keyboard(
         [
             InlineKeyboardButton(
                 "⬅️",
-                callback_data=prev_index,
+                callback_data=f"{config.ALL_BOOKS_CALLBACK}{prev_index}",
             ),
             InlineKeyboardButton(
                 str(current_index + 1) + "/" + str(overall_count),
@@ -330,7 +343,7 @@ def _get_categories_keyboard(
             ),
             InlineKeyboardButton(
                 "➡️",
-                callback_data=next_index,
+                callback_data=f"{config.ALL_BOOKS_CALLBACK}{next_index}",
             ),
         ],
     ]
@@ -359,7 +372,8 @@ async def button(
     if not query.data or not query.data.strip():
         return
     categories_with_books = list(await get_all_books())
-    current_index = int(query.data)
+    length_callback = len(config.ALL_BOOKS_CALLBACK)
+    current_index = int(query.data[length_callback:])
     await query.edit_message_text(
         text=build_category_with_books_string(categories_with_books[current_index]),
         reply_markup=_get_categories_keyboard(
@@ -395,7 +409,11 @@ if __name__ == "__main__":
         all_books_2,
     )
     application.add_handler(all_books_handler_2)
-    application.add_handler(CallbackQueryHandler(button))
+    application.add_handler(
+        CallbackQueryHandler(
+            button, pattern="^" + config.ALL_BOOKS_CALLBACK + r"(\d+)$"
+        )
+    )
 
     allready_handler = CommandHandler(
         "allready",
