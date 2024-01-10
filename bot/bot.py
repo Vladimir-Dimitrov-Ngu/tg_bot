@@ -136,6 +136,36 @@ async def now(
     )
 
 
+async def vote_button(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    query = update.callback_query
+    await query.answer()
+    if not query.data or not query.data.strip():
+        return
+
+    categories_with_books = list(await get_non_started_books())
+    pattern_prefix_length = len(config.VOTE_BOOKS_CALLBACK)
+    current_category_index = int(query.data[pattern_prefix_length:])
+    current_category = categories_with_books[current_category_index]
+    category_books_start_index = calculate_category_book_start_index(
+        categories_with_books, current_category
+    )
+
+    await query.edit_message_text(
+        text=build_category_with_books_string(
+            current_category, category_books_start_index
+        ),
+        reply_markup=_get_categories_keyboard(
+            config.VOTE_BOOKS_CALLBACK,
+            current_category_index,
+            len(categories_with_books),
+        ),
+        parse_mode=constants.ParseMode.HTML,
+    )
+
+
 async def vote(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -157,7 +187,9 @@ async def vote(
     )
     await update.message.reply_text(
         build_category_with_books_string(first_category, category_books_start_index),
-        reply_markup=_get_categories_keyboard(0, len(categories_with_books)),
+        reply_markup=_get_categories_keyboard(
+            config.VOTE_BOOKS_CALLBACK, 0, len(categories_with_books)
+        ),
         parse_mode=constants.ParseMode.HTML,
     )
     return
@@ -321,6 +353,7 @@ async def vote_results_graph(
 
 
 def _get_categories_keyboard(
+    prefix: str,
     current_index: int,
     overall_count: int,
 ) -> InlineKeyboardMarkup:
@@ -335,7 +368,7 @@ def _get_categories_keyboard(
         [
             InlineKeyboardButton(
                 "⬅️",
-                callback_data=f"{config.ALL_BOOKS_CALLBACK}{prev_index}",
+                callback_data=f"{prefix}{prev_index}",
             ),
             InlineKeyboardButton(
                 str(current_index + 1) + "/" + str(overall_count),
@@ -343,7 +376,7 @@ def _get_categories_keyboard(
             ),
             InlineKeyboardButton(
                 "➡️",
-                callback_data=f"{config.ALL_BOOKS_CALLBACK}{next_index}",
+                callback_data=f"{prefix}{next_index}",
             ),
         ],
     ]
@@ -357,13 +390,15 @@ async def all_books_2(
     categories_with_books = list(await get_all_books())
     await update.message.reply_text(
         build_category_with_books_string(categories_with_books[0]),
-        reply_markup=_get_categories_keyboard(0, len(categories_with_books)),
+        reply_markup=_get_categories_keyboard(
+            config.ALL_BOOKS_CALLBACK, 0, len(categories_with_books)
+        ),
         parse_mode=constants.ParseMode.HTML,
     )
     return
 
 
-async def button(
+async def all_books_button(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ):
@@ -372,12 +407,12 @@ async def button(
     if not query.data or not query.data.strip():
         return
     categories_with_books = list(await get_all_books())
-    length_callback = len(config.ALL_BOOKS_CALLBACK)
-    current_index = int(query.data[length_callback:])
+    pattern_prefix_length = len(config.ALL_BOOKS_CALLBACK)
+    current_index = int(query.data[pattern_prefix_length:])
     await query.edit_message_text(
         text=build_category_with_books_string(categories_with_books[current_index]),
         reply_markup=_get_categories_keyboard(
-            current_index, len(categories_with_books)
+            config.ALL_BOOKS_CALLBACK, current_index, len(categories_with_books)
         ),
         parse_mode=constants.ParseMode.HTML,
     )
@@ -411,7 +446,7 @@ if __name__ == "__main__":
     application.add_handler(all_books_handler_2)
     application.add_handler(
         CallbackQueryHandler(
-            button, pattern="^" + config.ALL_BOOKS_CALLBACK + r"(\d+)$"
+            all_books_button, pattern="^" + config.ALL_BOOKS_CALLBACK + r"(\d+)$"
         )
     )
 
@@ -432,6 +467,11 @@ if __name__ == "__main__":
         vote,
     )
     application.add_handler(vote_handler)
+    application.add_handler(
+        CallbackQueryHandler(
+            vote_button, pattern="^" + config.VOTE_BOOKS_CALLBACK + r"(\d+)$"
+        )
+    )
 
     vote_results_handler = CommandHandler(
         "voteresults",
@@ -445,10 +485,10 @@ if __name__ == "__main__":
     )
     application.add_handler(vote_results_graph_handler)
 
-    vote_process_hander = MessageHandler(
+    vote_process_handler = MessageHandler(
         filters.TEXT & (~filters.COMMAND),
         vote_process,
     )
-    application.add_handler(vote_process_hander)
+    application.add_handler(vote_process_handler)
 
     application.run_polling()

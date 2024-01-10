@@ -37,8 +37,8 @@ def calculate_category_book_start_index(
 ):
     start_index = 0
     for category in categories:
-        if category.id == current_category.id:
-            start_index += len(tuple(current_category.books)) - 1
+        if category.id != current_category.id:
+            start_index += len(tuple(category.books))
         else:
             return start_index
 
