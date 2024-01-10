@@ -72,9 +72,9 @@ SUCCESS_VOTE = """
 """
 
 PREV_CATEGORY_BUTTON = """
-⬅️ Предыдущая категория {current_index}/{overall_count}
+⬅️ {current_index}/{overall_count}
 """
 
 NEXT_CATEGORY_BUTTON = """
-Следующая категория {current_index}/{overall_count} ➡️
+{current_index}/{overall_count} ➡️
 """

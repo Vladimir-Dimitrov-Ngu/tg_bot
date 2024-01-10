@@ -321,17 +321,15 @@ def _get_categories_keyboard(
     keyboard = [
         [
             InlineKeyboardButton(
-                message_text.PREV_CATEGORY_BUTTON.format(
-                    current_index=prev_index + 1,
-                    overall_count=overall_count,
-                ),
+                "⬅️",
                 callback_data=prev_index,
             ),
             InlineKeyboardButton(
-                message_text.NEXT_CATEGORY_BUTTON.format(
-                    current_index=next_index + 1,
-                    overall_count=overall_count,
-                ),
+                str(current_index + 1) + "/" + str(overall_count),
+                callback_data=" ",
+            ),
+            InlineKeyboardButton(
+                "➡️",
                 callback_data=next_index,
             ),
         ],
@@ -358,6 +356,8 @@ async def button(
 ):
     query = update.callback_query
     await query.answer()
+    if not query.data or not query.data.strip():
+        return
     categories_with_books = list(await get_all_books())
     current_index = int(query.data)
     await query.edit_message_text(
