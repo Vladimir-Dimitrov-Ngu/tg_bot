@@ -212,7 +212,7 @@ read_start='2024-01-01',
 read_finish='2024-02-12'
 where name='Программируй & типизируй :: Влад Ришкуция';
 
-insert into voting(voting_start, voting_finish) values('2023-12-30', '2024-01-10');
+insert into voting(voting_start, voting_finish) values('2023-12-30', '2024-01-15');
 
 insert into vote values (1, 1, 1, 2, 3);
 insert into vote values (2, 1, 3, 2, 1);

@@ -32,6 +32,7 @@ from allbooks import (
     calculate_category_book_start_index,
 )
 from votings import get_actual_voting, get_leaders, save_vote
+from num_to_words import books_to_words
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -248,7 +249,7 @@ async def vote_process(
         )
         return
 
-    books = await get_books_by_numbers(numbers)
+    books = tuple(await get_books_by_numbers(numbers))
     if len(books) != config.VOTE_ELEMENTS_COUNT:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -270,7 +271,10 @@ async def vote_process(
         books_formatted.append(str(index) + ". " + book.name)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=message_text.SUCCESS_VOTE.format(books="\n".join(books_formatted)),
+        text=message_text.SUCCESS_VOTE.format(
+            books="\n".join(books_formatted),
+            books_count=books_to_words(len(books_formatted)),
+        ),
     )
     return
 
