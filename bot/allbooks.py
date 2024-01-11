@@ -32,6 +32,17 @@ class Category:
     books: Iterable[int]
 
 
+def calculate_category_book_start_index(
+    categories: Iterable[Category], current_category: Category
+):
+    start_index = 0
+    for category in categories:
+        if category.id != current_category.id:
+            start_index += len(tuple(category.books))
+        else:
+            return start_index
+
+
 def _group_books_by_category(books: Iterable[Book]) -> Iterable[Category]:
     categories = []
     category_id = None
@@ -55,11 +66,16 @@ def _format_author_books(book: str):
         return book, None
 
 
-def build_category_with_books_string(category: Category) -> str:
+def build_category_with_books_string(
+    category: Category, start_index: int | None = None
+) -> str:
     response = ["<b>" + category.name + "</b>\n\n"]
     for index, book in enumerate(category.books, 1):
-        emoji = RANDOM_EMOJI[index]
-        response.append(f"{emoji} {_format_author_books(book.name)}\n")
+        if start_index is None:
+            prefix = RANDOM_EMOJI[index]
+        else:
+            prefix = f"{start_index + index}."
+        response.append(f"{prefix} {_format_author_books(book.name)}\n")
     return "".join(response)
 
 
